@@ -3,51 +3,90 @@ var async = require('async');
 var path = require('path');
 var PDFDocument = require('pdfkit');
 var wkhtmltopdf = require('wkhtmltopdf');
+var request = require('request');
 
+var url = 'https://rest.sandbox.netsuite.com/app/site/hosting/restlet.nl?script=129&deploy=1';
+
+var headers = {
+  'Authorization': 'NLAuth nlauth_account=277620,nlauth_email=jake@zake.com,nlauth_signature=@Eldar4242,nlauth_role=3',
+  'Content-Type': 'application/json'
+}
 
 var size = [108,72];
 
 function start(){
-  var file = fs.readFileSync('cat.csv', 'utf-8');
-  var cut = file.split('\r\n');
-  var num = 100;
-  async.each(cut, function(line, cb){
-    console.log(line, num);
-    num = num + 10;
-    cb();
-  }, function(){
-
+  request.post({
+    url: url,
+    headers: headers,
+    body: '{"oldID":"808-1443_5", "newID":"270-1443_5"}'
+  }, function(err, res, body){
+    console.log(err, body);
   });
 }
 
 /*function start(){
+  var key = require('./key.js');
   var file = fs.readFileSync('Items292.csv', 'utf-8');
   var lines = file.split('\n');
+  var obj = {};
   async.each(lines, function(line, cb){
     var row = line.split(',');
-    var fullSku = row[0];
+    var sku = row[0];
     var legacy = row[1];
     var name = row[2];
     var cat = row[3];
     var desc = row[4];
-    var sku = row[0].slice(0,8);
     var letter = /^[a-zA-Z]/.test(sku);
-    if(letter){
-      cb();
-    }else{
-      if(legacy.length > 1){
-
+    if(line.length > 1){
+      if(letter){
+        cb();
       }else{
+        if(legacy.length > 1){
+          var oSKU = legacy.split('-');
+          var nSKU = sku.split('-');
+          var oldCat = oSKU[0];
+          var cat2 = key[oldCat];
+          if(cat2 == undefined){
+            nSKU[0] = '404';
+          }else{
+            nSKU[0] = cat2;
+          }
+          var newSKU = nSKU.join('-');
 
+          console.log(newSKU+','+sku);
+          cb();
+        }else{
+          cb();
+        }
       }
+    }else{
+      cb();
     }
   }, function(){
-
+    console.log('done');
   });
-  /*var p = path.join(__dirname, 'imgs', 'AC-DC-UNI-PR-AD150HC.png');
-  var html = '<html><head></head><body><div>AC-DC-UNI-PR-AD150HC</div><img src="./imgs/AC-DC-UNI-PR-AD150HC.png"></body></html>';
-  wkhtmltopdf(html).pipe(fs.createWriteStream('test.pdf'));*/
-//}
+}*/
+
+// working on variants
+/*var ext = newSKU.split('_');
+var k = ext[0];
+if(k == undefined){
+  obj[newSKU] = newSKU;
+  cb()
+}else{
+  if(obj[k] == undefined){
+    obj[k] = [];
+    obj[k].push(newSKU);
+    cb();
+  }else{
+    obj[k].push(newSKU);
+    cb();
+  }
+}*/
+
+/*var p = path.join(__dirname, 'imgs', 'AC-DC-UNI-PR-AD150HC.png');
+var html = '<html><head></head><body><div>AC-DC-UNI-PR-AD150HC</div><img src="./imgs/AC-DC-UNI-PR-AD150HC.png"></body></html>';
+wkhtmltopdf(html).pipe(fs.createWriteStream('test.pdf'));*/
 
 /*function start(){
   var doc = new PDFDocument({size: size});

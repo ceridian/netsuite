@@ -9,13 +9,85 @@ var sizeOf=require('image-size');
 // barcode // var url = 'https://rest.sandbox.netsuite.com/app/site/hosting/restlet.nl?script=129&deploy=1';
 //var url = "https://rest.sandbox.netsuite.com/app/site/hosting/restlet.nl?script=135&deploy=1";
 var url = "https://rest.na1.netsuite.com/app/site/hosting/restlet.nl?script=167&deploy=1";
+var url2 = "https://rest.na1.netsuite.com/app/site/hosting/restlet.nl?script=168&deploy=1";
 
 var headers = {
   'Authorization': 'NLAuth nlauth_account=277620,nlauth_email=jake@zake.com,nlauth_signature=@Eldar4242,nlauth_role=3',
   'Content-Type': 'application/json'
 }
 
+var list = {};
+var dups = [];
+
+
+
 function start(){
+  var file = fs.readFileSync('NS-Labels-Barcodes-3.csv', 'utf-8');
+  var lines = file.split('\r\n');
+  async.each(lines, function(line, cb){
+    var row = line.split(',');
+    var sku = row[0];
+    var legacy = row[1];
+    var qty = row[2];
+    if(legacy != undefined){
+      list[legacy] = {sku: sku, qty: qty};
+    }
+    cb();
+  }, function(){
+    compare(function(){
+      console.log('done');
+    });
+  });
+}
+
+function compare(callback){
+  var file = fs.readFileSync('Items381.csv', 'utf-8');
+  var lines = file.split('\n');
+  async.each(lines, function(line, cb){
+    var row = line.split(',');
+    var sku = row[0];
+    var legacy = row[1];
+    if(legacy){
+      var info = list[legacy];
+      if(info == undefined){
+        cb();
+      }else{
+        if(sku == info.sku){
+          cb();
+        }else{
+          request.post({
+            url: url,
+            headers: headers,
+            body: '"'+sku+'"'
+          }, function(err, res, body){
+            var parsed = JSON.parse(body);
+            async.each(parsed, function(item, cb2){
+              console.log(sku, item.id);
+              cb2();
+              /*request.post({
+                url: url2,
+                headers: headers,
+                body: '"'+item.id+'"'
+              }, function(err, res, body){
+                if(err) console.log(err);
+                console.log(body);
+                cb2();
+              });*/
+            }, function(){
+              cb();
+            });
+          });
+        }
+      }
+    }else{
+      cb();
+    }
+  }, function(){
+    callback();
+  });
+}
+
+/*function start(){
   var file = fs.readFileSync('Items155.csv', 'utf-8');
   var lines = file.split('\n');
   var obj = {};
@@ -77,7 +149,7 @@ function start(){
       console.log('done');
     });
   });
-}
+}*/
 
 /*var ext = newSKU.split('_');
 var k = ext[0];
